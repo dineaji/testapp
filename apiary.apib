@@ -1,0 +1,171 @@
+FORMAT: 1A
+HOST: http://polls.apiblueprint.org/
+
+# Ooyala Documentation
+
+This document describes the implementation approach for the Video players across all the brands
+websites. The purpose of this architecture is to standardize the player implementation and to
+control rollout of the fixes and enhancements to the video players. This serves to identify the
+architecture of the system and interactions between all system components.
+
+## PLAYER PROPERTY DEFENITION
+
+### What is a playerID?
+When a player is created and assigned to one or more assets in the account, it defines the playback
+options and the look and feel of your content. The player is identified by the player ID.
++ HTML format
+
+        <div id="oo-player-id" class="hiddenPlayerIds" style="display: none;">
+            <input type="hidden" value="eb2a4912cd64bc282805e03574a056c" />
+        </div>
++ JS Code would be
+        
+        "playerBrandingId": document.getElementById("oo-player-id") != null ? document.getElementById("oo-player-id").children[0].value : []
+
+### What is a pcode?
+Abbreviation for partner code, provider code, or publisher ID.
+When a Backlot account is created in ooyala, it gives a unique ID for your account referred as pcode.
+
++ HTML format
+
+        <input type="hidden" id="oo-player-pcode" value="h2MzIwZzE6tGLgacwj2wkjo2Nd2Jv0lF" />
+        
++ JS Code would be
+        
+        'pcode': document.getElementById("oo-player-pcode") != null ? document.getElementById("oo-player-pcode").value : []
+
+### What is a contentID/videoID?
+When a Backlot account is created in ooyala, it gives a unique ID for your account referred as pcode.
+
+## PLAYER LIBRABIES/FRAMEWORKS
+##### playerDomain : "https://player.ooyala.com/static/v4/stable/"
+##### playerVersion: document.getElementById("oo-player-version") != null ? document.getElementById("oo-player-version").value : '4.32.8'
+
+### CSS
+
+    https://player.ooyala.com/static/v4/stable/${playerVersion}/skin-plugin/html5-skin.min.css
+    
+    
+### JS
+    
++ core-min.js : http://player.ooyala.com/static/v4/stable/${playerVersion}/core.min.js
++ main_html5.min.js : http://player.ooyala.com/static/v4/stable/${playerVersion}/video-plugin/main_html5.min.js    
++ html5-skin.min.js : http://player.ooyala.com/static/v4/stable/${playerVersion}/skin-plugin/html5-skin.min.js
++ ad_manager_vast.js : http://player.ooyala.com/static/v4/stable/${playerVersion}/ad-plugin/ad_manager_vast.min.js
+
+### JSON
+    
+        https://player.ooyala.com/static/v4/stable/${playerVersion}/skin-plugin/skin.json
+        
+## HTML AND JS TO BE FOLLOWED
+
+### HTML CHANGES
+    There is no structural change required in the way thumbnails for videos rendered. The only
+additional change in thumbnails is to pass the correct content‐id to the attribute (“data‐videoid”)
+for the player to play corresponding video.
+    
++ Class to be added: oo-player-container
++ Data attributes to be added
+    + data-autoplay="true"
+    + data-video-id="E2bTNmaTE6on2ywOlLgF_Rg2XRiSJ8Uw" // nothing but videoid/contentid
+- Example
+        
+        <div class="oo-player-container" data-autoplay="true" data-video-id="E2bTNmaTE6on2ywOlLgF_Rg2XRiSJ8Uw"></div>
+
+
+### JS CHANGES  
+
++ CONFIG SETUP
+
+        {
+            'pcode': document.getElementById("oo-player-pcode") != null ? document.getElementById("oo-player-pcode").value : [],
+            "playerBrandingId": document.getElementById("oo-player-id") != null ? document.getElementById("oo-player-id").children[0].value : [],
+            'autoplay': false,
+            'width': '100%',
+            'height': '100%',
+            "skin": {
+                "config": `${playerV4}${playerVersion}/skin-plugin/skin.json`,
+                "inline": {
+                    "startScreen": {
+                        "showDescription": false,
+                        "showTitle": false,
+                        "playIconStyle": {
+                            "color": "white",
+                            "opacity": 1
+                        }
+                    },
+                    "shareScreen": false,
+                    "pauseScreen": {
+                        "showTitle": false,
+                        "showDescription": false
+                    },
+                    "closedCaptionOptions": {
+                        "enabled": false
+                    }
+                }
+            }
+        }
+    
++ CREATE PLAYER
+    
+        player = OO.Player.create(divId, contentId, playerSetting);
+        
+        * divId // divid, should be unique
+        * content id // video id
+        * playerSetting // player config which given above
+
+## BEST PRACTICES
+    
++ Always use OO.ready when creating a new player
+    
+        Example:
+            var player;
+            var playerParams = {};
+            OO.ready( function () {
+            player = OO.Player.create( 'oo-container' ,
+            '5kbmU5MzE6ivgWkobhscmQwGuD7fyNIa' , playerParams);
+            });
+    
++ Use inline Skin overrides instead of skin.json
+        
+        Example:
+            var player;
+            var playerParams = {
+                pcode: '1tZ2YyOrJS54quNwfWyNWCYUoNex' ,
+                playerBrandingId: 'a931ae1f41d849acbbeee7cea03afcf6' ,
+                skin: {
+                    inline: {
+                        skipControls: {
+                        enabled: true // This will enable skip controls and use default
+                        values for all other skin settings
+                        }
+                    }
+                }
+            };
+
++ Use minified, Ooyala-hosted player resources (Always use the .min.js or .min.css extension of the files instead of the .js or
+.css extensions.)
++ Use https when loading player resources
++ Optimization: Declare player resources at the top of the page
+    
+        Example:
+            <head>
+                <title> Ooyala Video Test </title>
+                <meta charset= "UTF-8" >
+                <!-- Declare stylesheet before scripts -->
+
+
+## PERFORMACE TROUBLESHOOTING
+When using the debug player, the console will report two key metrics: Player Load, and
+Time-to-First Frame.
+
+## DEMO PAGE
+http://debug.ooyala.com/ea/index.html
++ 
+        Example: 
+            http://debug.ooyala.com/ea/index.html?ec=BqZWE4ZjE6W1ctVoHR12Zdp7EMKMsDBH&pbid=s5Z2MyOlF46r3PXZUl9hPiwU2cYK&pcode=h2MzIwZzE6tGLgacwj2wkjo2Nd2Jv0lF&core_player=http%3A%2F%2Fplayer.ooyala.com%2Fstatic%2Fv4%2Fproduction%2Flatest%2Fcore.min.js&video_plugins=http%3A%2F%2Fplayer.ooyala.com%2Fstatic%2Fv4%2Fproduction%2Flatest%2Fvideo-plugin%2Fmain_html5.min.js%0Ahttp%3A%2F%2Fplayer.ooyala.com%2Fstatic%2Fv4%2Fproduction%2Flatest%2Fvideo-plugin%2Fbit_wrapper.min.js&html5_skin=http%3A%2F%2Fplayer.ooyala.com%2Fstatic%2Fv4%2Fproduction%2Flatest%2Fskin-plugin%2Fhtml5-skin.min.js&skin_asset=http%3A%2F%2Fplayer.ooyala.com%2Fstatic%2Fv4%2Fproduction%2Flatest%2Fskin-plugin%2Fhtml5-skin.min.css&skin_config=http%3A%2F%2Fplayer.ooyala.com%2Fstatic%2Fv4%2Fproduction%2Flatest%2Fskin-plugin%2Fskin.json&inline_skin=%7B%22startScreen%22%3A%7B%22showTitle%22%3Afalse%2C%22showDescription%22%3Afalse%2C%22playIconStyle%22%3A%7B%22color%22%3A%22red%22%2C%22opacity%22%3A1%7D%7D%2C%22pauseScreen%22%3A%7B%22showTitle%22%3Afalse%7D%7D&options=%7B%22autoplay%22%3Atrue%7D&trackingLevel=unset
+        
+        
+
+## RELEASE NOTES
++ Requests https://help-ooyala.brightcove.com/video-platform/concepts/pbv4_release_notes.html
